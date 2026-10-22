@@ -117,6 +117,27 @@ public static class SeedData
         if (demoCandidates.Count > 0)
             await db.SaveChangesAsync();
 
+        var surreyMayor = await db.Positions
+            .Include(p => p.Municipality)
+            .SingleOrDefaultAsync(p => p.Municipality.Name == "Surrey" && p.Name == "Mayor");
+        if (surreyMayor != null && !await db.Candidates.AnyAsync(c =>
+            c.Name == "Jordan Williams" && c.PositionId == surreyMayor.PositionId))
+        {
+            db.Candidates.Add(new Candidate
+            {
+                Name = "Jordan Williams",
+                PositionId = surreyMayor.PositionId,
+                Profile = "Fictional candidate for Surrey Mayor. Building a connected, welcoming Surrey.",
+                Tagline = "A connected, welcoming Surrey.",
+                Website = "https://example.com/candidates/jordan-williams",
+                Email = "jordan-williams@example.com",
+                SocialUrl = "https://social.example/@jordan-williams",
+                VideoUrl = "https://video.example/watch/jordan-williams",
+                DateCreated = new DateTime(2026, 8, 20)
+            });
+            await db.SaveChangesAsync();
+        }
+
         var roles = services.GetRequiredService<RoleManager<IdentityRole>>();
         var seeded = await db.Municipalities.ToListAsync();
         foreach (var name in seeded.Select(m => Roles.ForMunicipality(m.MunicipalityId))
