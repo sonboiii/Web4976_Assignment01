@@ -79,16 +79,43 @@ public static class SeedData
             }
 
             await db.SaveChangesAsync();
-            void Add(string name, Position position, string tagline) => db.Candidates.Add(new Candidate
+            void Add(string name, Position position, string tagline)
             {
-                Name = name,
-                PositionId = position.PositionId,
-                Tagline = tagline,
-                Profile = $"Fictional candidate for {position.Name}. {tagline}",
-                PhotoFileName = $"seed-portrait-{index++ % 12 + 1}.svg",
-                DateCreated = new DateTime(2026, 8, 1).AddDays(index)
-            });
+                var slug = string.Join('-', name.ToLowerInvariant()
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+                db.Candidates.Add(new Candidate
+                {
+                    Name = name,
+                    PositionId = position.PositionId,
+                    Tagline = tagline,
+                    Profile = $"Fictional candidate for {position.Name}. {tagline}",
+                    PhotoFileName = $"seed-portrait-{index++ % 12 + 1}.svg",
+                    Website = $"https://example.com/candidates/{slug}",
+                    Email = $"{slug}@example.com",
+                    SocialUrl = $"https://social.example/@{slug}",
+                    VideoUrl = $"https://video.example/watch/{slug}",
+                    DateCreated = new DateTime(2026, 8, 1).AddDays(index)
+                });
+            }
         }
+
+        var demoCandidates = await db.Candidates
+            .Where(c => c.PhotoFileName != null && c.PhotoFileName.StartsWith("seed-portrait-"))
+            .ToListAsync();
+        foreach (var candidate in demoCandidates)
+        {
+            var slug = string.Join('-', candidate.Name.ToLowerInvariant()
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+            candidate.Website ??= $"https://example.com/candidates/{slug}";
+            candidate.Email ??= $"{slug}@example.com";
+            candidate.SocialUrl ??= $"https://social.example/@{slug}";
+            candidate.VideoUrl ??= $"https://video.example/watch/{slug}";
+        }
+
+        if (demoCandidates.Count > 0)
+            await db.SaveChangesAsync();
 
         var roles = services.GetRequiredService<RoleManager<IdentityRole>>();
         var seeded = await db.Municipalities.ToListAsync();
