@@ -1,5 +1,5 @@
 ---
-mode: agent
+agent: agent
 description: Add or update development seed data
 ---
 Update the seed data in `Data/` to add: ${input:what:What to seed, e.g. a new municipality with positions and candidates}.

@@ -1,5 +1,5 @@
 ---
-mode: agent
+agent: agent
 description: Scaffold a municipality-scoped admin CRUD controller and views
 ---
 Create admin CRUD for the `${input:entity:Entity name, e.g. Position}` entity in `Areas/Admin`.

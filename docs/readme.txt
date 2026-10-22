@@ -5,7 +5,7 @@ Municipal Elections Management System (CivicVote)
 TEAM MEMBERS
 ------------
 - Son Bui (A01450344)
-- Larry Lin ([Student ID])
+- Larry Lin ([A01461078])
 
 
 LINKS
