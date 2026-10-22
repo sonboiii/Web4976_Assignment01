@@ -1,8 +1,107 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model DirectoryViewModel
+
+@{
+    ViewData["Title"] = "Candidates";
+    var back = Context.Request.Path + Context.Request.QueryString;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<h1>Candidates</h1>
+
+<form method="get" class="row g-2 mb-4">
+    <div class="col-md">
+        <label for="search" class="form-label">Name</label>
+        <input id="search" name="search" value="@Model.Search" type="search" class="form-control" />
+    </div>
+
+    <div class="col-md">
+        <label for="municipalityId" class="form-label">Municipality</label>
+        <select id="municipalityId" name="municipalityId" class="form-select">
+            <option value="">All municipalities</option>
+            @foreach (var m in Model.Municipalities)
+            {
+                <option value="@m.MunicipalityId" selected="@(m.MunicipalityId == Model.MunicipalityId)">@m.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md">
+        <label for="positionId" class="form-label">Position</label>
+        <select id="positionId" name="positionId" class="form-select">
+            <option value="">All positions</option>
+            @foreach (var p in Model.Positions)
+            {
+                <option value="@p.PositionId" data-municipality="@p.MunicipalityId" selected="@(p.PositionId == Model.PositionId)">@p.Name · @p.Municipality.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-auto">
+        <label for="sort" class="form-label">Sort</label>
+        <select name="sort" id="sort" class="form-select">
+            <option value="name" selected="@(Model.Sort != "newest")">Name A–Z</option>
+            <option value="newest" selected="@(Model.Sort == "newest")">Newest</option>
+        </select>
+    </div>
+
+    <div class="col-md-auto align-self-end">
+        <button class="btn btn-primary">Search</button>
+        <a asp-action="Index">Reset</a>
+    </div>
+</form>
+
+<p class="text-body-secondary">Showing @(Model.Total == 0 ? 0 : (Model.Page - 1) * 6 + 1)–@Math.Min(Model.Page * 6, Model.Total) of @Model.Total candidates</p>
+
+@if (Model.Candidates.Count == 0)
+{
+    <p>No candidates found.</p>
+}
+
+<div class="row g-3">
+    @foreach (var c in Model.Candidates)
+    {
+        <article class="col-sm-6 col-lg-4">
+            <div class="border rounded p-3 h-100">
+                <div class="d-flex gap-3 align-items-center mb-3">
+                    <img class="portrait" src="@c.PhotoUrl" alt="Portrait of @c.Name" loading="lazy" />
+                    <div>
+                        <h2 class="h5 mb-1">
+                            <a asp-controller="Candidates" asp-action="Details" asp-route-id="@c.CandidateId">@c.Name</a>
+                        </h2>
+                        <div class="small text-body-secondary">@c.Position.Name · @c.Position.Municipality.Name</div>
+                    </div>
+                </div>
+
+                <p class="small">@c.Tagline</p>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <form method="post" asp-controller="Guide" asp-action="Toggle" asp-route-id="@c.CandidateId">
+                        <input name="returnUrl" type="hidden" value="@back" />
+                        <button class="btn btn-sm btn-outline-primary">@(Model.SelectedIds.Contains(c.CandidateId) ? "Remove from guide" : "Add to guide")</button>
+                    </form>
+
+                    <form method="post" asp-controller="Candidates" asp-action="ToggleCompare" asp-route-id="@c.CandidateId">
+                        <input name="returnUrl" type="hidden" value="@back" />
+                        <button class="btn btn-sm btn-outline-secondary">@(Model.CompareIds.Contains(c.CandidateId) ? "Remove comparison" : "Compare")</button>
+                    </form>
+                </div>
+            </div>
+        </article>
+    }
 </div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="d-flex flex-wrap gap-2 mt-4" aria-label="Candidate pages">
+        @for (var p = 1; p <= Model.TotalPages; p++)
+        {
+            <a class="btn btn-sm @(p == Model.Page ? "btn-primary" : "btn-outline-secondary")"
+               aria-current="@(p == Model.Page ? "page" : null)"
+               asp-action="Index"
+               asp-route-page="@p"
+               asp-route-search="@Model.Search"
+               asp-route-municipalityId="@Model.MunicipalityId"
+               asp-route-positionId="@Model.PositionId"
+               asp-route-sort="@Model.Sort">@p</a>
+        }
+    </nav>
+}

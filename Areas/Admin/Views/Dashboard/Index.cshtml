@@ -1,0 +1,18 @@
+@model DashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1>Dashboard</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Municipalities</dt>
+    <dd class="col-sm-9">@Model.Municipalities</dd>
+
+    <dt class="col-sm-3">Positions</dt>
+    <dd class="col-sm-9">@Model.Positions</dd>
+
+    <dt class="col-sm-3">Candidates</dt>
+    <dd class="col-sm-9">@Model.Candidates</dd>
+</dl>

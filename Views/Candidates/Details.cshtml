@@ -1,0 +1,75 @@
+@model object
+
+@{
+    var comparing = Model is List<Candidate>;
+    var candidates = Model is Candidate single ? new List<Candidate> { single } : (List<Candidate>)Model;
+    ViewData["Title"] = comparing ? "Compare candidates" : candidates[0].Name;
+    var back = Context.Request.Path.ToString();
+}
+
+<h1>@ViewData["Title"]</h1>
+
+@if (comparing && candidates.Count == 0)
+{
+    <p>No candidates selected. <a asp-controller="Home" asp-action="Index">Browse candidates</a></p>
+}
+
+@if (comparing && candidates.Select(c => c.PositionId).Distinct().Count() > 1)
+{
+    <p class="text-body-secondary">Different positions or municipalities have separate seat limits.</p>
+}
+
+<div class="row g-4">
+    @foreach (var c in candidates)
+    {
+        <article class="@(comparing ? "col-md-4" : "col-lg-8")">
+            <img class="portrait mb-3" src="@c.PhotoUrl" alt="Portrait of @c.Name" />
+
+            @if (comparing)
+            {
+                <h2 class="h4">
+                    <a asp-action="Details" asp-route-id="@c.CandidateId">@c.Name</a>
+                </h2>
+            }
+
+            <p>@c.Position.Name · @c.Position.Municipality.Name · @c.Position.SeatsAvailable @(c.Position.SeatsAvailable == 1 ? "seat" : "seats")</p>
+            <p>Election: @c.Position.Municipality.ElectionDate.ToString("MMMM d, yyyy")</p>
+            <p class="fw-semibold">@c.Tagline</p>
+            <p class="pre-line">@c.Profile</p>
+
+            <div class="d-flex flex-wrap gap-3 mb-3">
+                @if (c.Website != null)
+                {
+                    <a href="@c.Website" target="_blank" rel="noopener noreferrer">Website</a>
+                }
+
+                @if (c.Email != null)
+                {
+                    <a href="mailto:@c.Email">Email</a>
+                }
+
+                @if (c.SocialUrl != null)
+                {
+                    <a href="@c.SocialUrl" target="_blank" rel="noopener noreferrer">Social media</a>
+                }
+
+                @if (c.VideoUrl != null)
+                {
+                    <a href="@c.VideoUrl" target="_blank" rel="noopener noreferrer">Video</a>
+                }
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <form method="post" asp-controller="Guide" asp-action="Toggle" asp-route-id="@c.CandidateId">
+                    <input name="returnUrl" type="hidden" value="@back" />
+                    <button class="btn btn-sm btn-primary">@(Selection.Read(Context.Session, "Guide").Contains(c.CandidateId) ? "Remove from guide" : "Add to guide")</button>
+                </form>
+
+                <form method="post" asp-action="ToggleCompare" asp-route-id="@c.CandidateId">
+                    <input name="returnUrl" type="hidden" value="@back" />
+                    <button class="btn btn-sm btn-outline-secondary">@(Selection.Read(Context.Session, "Compare").Contains(c.CandidateId) ? "Remove comparison" : "Compare")</button>
+                </form>
+            </div>
+        </article>
+    }
+</div>

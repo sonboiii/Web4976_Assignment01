@@ -1,0 +1,68 @@
+@model object
+
+@{
+    var id = Model switch
+    {
+        Municipality m => m.MunicipalityId,
+        Position p => p.PositionId,
+        Candidate c => c.CandidateId,
+        _ => 0
+    };
+
+    var name = Model switch
+    {
+        Municipality m => m.Name,
+        Position p => p.Name,
+        Candidate c => c.Name,
+        _ => "Details"
+    };
+
+    ViewData["Title"] = name;
+}
+
+<h1>@name</h1>
+
+@switch (Model)
+{
+    case Municipality m:
+        @if (m.LogoFileName != null && !m.LogoFileName.StartsWith("seed-"))
+        {
+            <img src="/uploads/@m.LogoFileName" class="logo" alt="@m.Name logo" />
+        }
+
+        <p>@m.Province · @m.ElectionDate.ToString("MMMM d, yyyy")</p>
+        <p>@m.Description</p>
+
+        <ul>
+            @foreach (var p in m.Positions)
+            {
+                <li><a asp-controller="Positions" asp-action="Details" asp-route-id="@p.PositionId">@p.Name</a> · @p.SeatsAvailable seats · @p.Candidates.Count candidates</li>
+            }
+        </ul>
+        break;
+
+    case Position p:
+        <p>@p.Municipality.Name · @p.SeatsAvailable seats</p>
+        <ul>
+            @foreach (var c in p.Candidates)
+            {
+                <li>
+                    <a asp-controller="Candidates" asp-action="Details" asp-route-id="@c.CandidateId">@c.Name</a>
+                </li>
+            }
+        </ul>
+        break;
+
+    case Candidate c:
+        <img class="portrait mb-3" src="@c.PhotoUrl" alt="Portrait of @c.Name" />
+        <p>@c.Position.Municipality.Name · @c.Position.Name</p>
+        <p class="pre-line">@c.Profile</p>
+        <p class="small text-body-secondary">Created @c.DateCreated.ToString("MMM d, yyyy")</p>
+        <a asp-area="" asp-controller="Candidates" asp-action="Details" asp-route-id="@c.CandidateId">Public profile</a>
+        break;
+}
+
+<div class="form-actions">
+    <a class="btn btn-primary" asp-action="Edit" asp-route-id="@id">Edit</a>
+    <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
+</div>

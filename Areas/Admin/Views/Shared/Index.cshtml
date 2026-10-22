@@ -1,0 +1,106 @@
+@model object
+
+@{
+    var title = ViewContext.RouteData.Values["controller"]!.ToString()!;
+    var accounts = Model is List<ApplicationUser>;
+
+    var columns = Model switch
+    {
+        List<Municipality> => ("Province", "Election date"),
+        List<Position> => ("Municipality", "Seats / candidates"),
+        List<Candidate> => ("Municipality", "Position"),
+        _ => ("Access", "")
+    };
+
+    IEnumerable<(string Id, string Name, string Info, string Extra, bool Delete)> rows = Model switch
+    {
+        List<Municipality> items => items.Select(m => (m.MunicipalityId.ToString(), m.Name, m.Province, m.ElectionDate.ToString("MMM d, yyyy"), true)),
+        List<Position> items => items.Select(p => (p.PositionId.ToString(), p.Name, p.Municipality.Name, $"{p.SeatsAvailable} / {p.Candidates.Count}", true)),
+        List<Candidate> items => items.Select(c => (c.CandidateId.ToString(), c.Name, c.Position.Municipality.Name, c.Position.Name, true)),
+        List<ApplicationUser> items => items.Select(u => (u.Id, u.UserName!, u.MunicipalityId is int id ? ((Dictionary<int, string>)ViewBag.Municipalities).GetValueOrDefault(id, "Unassigned") + " Admin" : "Super Admin", "", u.MunicipalityId != null)),
+        _ => []
+    };
+
+    ViewData["Title"] = title;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">@title</h1>
+    <a class="btn btn-primary" asp-action="@(accounts ? "Create" : "Edit")">Add</a>
+</div>
+
+@if (Model is List<Candidate>)
+{
+    <form method="get" class="d-flex gap-2 mb-3">
+        <label class="visually-hidden" for="search">Candidate name</label>
+        <input id="search" name="search" type="search" value="@ViewBag.Search" placeholder="Candidate name" class="form-control" />
+        <button class="btn btn-outline-secondary">Search</button>
+    </form>
+}
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>@columns.Item1</th>
+                <th>@columns.Item2</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in rows)
+            {
+                <tr>
+                    <td>
+                        @if (accounts)
+                        {
+                            @row.Name
+                        }
+                        else
+                        {
+                            <a asp-action="Details" asp-route-id="@row.Id">@row.Name</a>
+                        }
+                    </td>
+                    <td>@row.Info</td>
+                    <td>@row.Extra</td>
+                    <td>
+                        <div class="d-flex gap-3">
+                            @if (!accounts)
+                            {
+                                <a asp-action="Edit" asp-route-id="@row.Id">Edit</a>
+                                <a asp-action="Delete" asp-route-id="@row.Id">Delete</a>
+                            }
+                            else if (row.Delete)
+                            {
+                                <form method="post" asp-action="Delete" asp-route-id="@row.Id" data-confirm="Remove this administrator?">
+                                    <button class="btn btn-sm btn-outline-danger">Remove</button>
+                                </form>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+
+            @if (!rows.Any())
+            {
+                <tr>
+                    <td colspan="4">No records.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model is List<Candidate> && ViewBag.Pages > 1)
+{
+    <nav class="d-flex gap-2" aria-label="Candidate pages">
+        @for (var p = 1; p <= (int)ViewBag.Pages; p++)
+        {
+            <a class="btn btn-sm @(p == (int)ViewBag.Page ? "btn-primary" : "btn-outline-secondary")"
+               asp-action="Index"
+               asp-route-page="@p"
+               asp-route-search="@ViewBag.Search">@p</a>
+        }
+    </nav>
+}

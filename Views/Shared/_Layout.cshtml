@@ -1,51 +1,86 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+@{
+    var admin = ViewContext.RouteData.Values["area"]?.ToString() == "Admin";
+}
+
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Web4976_Assignment01</title>
-    <script type="importmap"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · CivicVote</title>
+
+    <script>
+        try {
+            document.documentElement.dataset.bsTheme = localStorage.getItem('civic-theme') || 'light'
+        } catch {}
+    </script>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Web4976_Assignment01.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Web4976_Assignment01</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                    <partial name="_LoginPartial" />
-                </div>
-            </div>
+    <a class="visually-hidden-focusable" href="#main">Skip to content</a>
+
+    <header class="border-bottom no-print">
+        <nav class="container d-flex flex-wrap align-items-center gap-3 py-3" aria-label="Main navigation">
+            <a class="fw-bold me-auto" asp-area="" asp-controller="Home" asp-action="Index">CivicVote</a>
+            <a asp-area="" asp-controller="Home" asp-action="Index">Candidates</a>
+            <a asp-area="" asp-controller="Municipalities" asp-action="Index">Municipalities</a>
+            <a asp-area="" asp-controller="Candidates" asp-action="Compare">Compare (@Selection.Read(Context.Session, "Compare").Count)</a>
+            <a asp-area="" asp-controller="Guide" asp-action="Index">My guide (@Selection.Read(Context.Session, "Guide").Count)</a>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index">Admin</a>
+                <form method="post" asp-area="" asp-controller="Account" asp-action="Logout">
+                    <button class="btn btn-sm btn-outline-secondary">Sign out</button>
+                </form>
+            }
+            else
+            {
+                <a asp-area="" asp-controller="Account" asp-action="Login">Admin login</a>
+            }
+
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-theme>Dark mode</button>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Web4976_Assignment01 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
+    <main id="main" class="container py-4">
+        @if (admin)
+        {
+            <nav class="d-flex flex-wrap gap-3 mb-4 no-print" aria-label="Administration">
+                <a asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+
+                @if (User.IsInRole(Roles.SuperAdmin))
+                {
+                    <a asp-controller="Municipalities" asp-action="Index">Municipalities</a>
+                }
+
+                <a asp-controller="Positions" asp-action="Index">Positions</a>
+                <a asp-controller="Candidates" asp-action="Index">Candidates</a>
+
+                @if (User.IsInRole(Roles.SuperAdmin))
+                {
+                    <a asp-controller="Administrators" asp-action="Index">Administrators</a>
+                }
+            </nav>
+        }
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-secondary no-print" role="status">@message</div>
+        }
+
+        @RenderBody()
+    </main>
+
+    <footer class="container border-top py-3 small text-body-secondary no-print">Local election demo · Fictional candidates</footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

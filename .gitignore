@@ -3,6 +3,7 @@ bin/
 obj/
 
 ## Visual Studio and VS Code
+.idea/
 .vs/
 .vscode/
 
@@ -13,3 +14,8 @@ obj/
 ## Local tooling and test results
 TestResults/
 *.log
+
+## Local application state
+App_Data/
+wwwroot/uploads/
+app.db-*

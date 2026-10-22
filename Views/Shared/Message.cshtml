@@ -1,0 +1,7 @@
+@{
+    ViewData["Title"] = "Request error";
+}
+
+<h1 class="h3">Request unavailable</h1>
+<p>@(Context.Response.StatusCode == 403 ? "Access restricted." : "Please try again.")</p>
+<a asp-area="" asp-controller="Home" asp-action="Index">Candidates</a>

@@ -1,0 +1,33 @@
+@model object
+
+@{
+    var id = Model switch
+    {
+        Municipality m => m.MunicipalityId,
+        Position p => p.PositionId,
+        Candidate c => c.CandidateId,
+        _ => 0
+    };
+
+    var name = Model switch
+    {
+        Municipality m => m.Name,
+        Position p => p.Name,
+        Candidate c => c.Name,
+        _ => "record"
+    };
+
+    ViewData["Title"] = "Delete " + name;
+}
+
+<h1>Delete @name?</h1>
+
+@if (Model is not Candidate)
+{
+    <p>Remove related records and administrator assignments first.</p>
+}
+
+<form method="post" asp-action="Delete" asp-route-id="@id" class="form-actions">
+    <button class="btn btn-danger">Delete</button>
+    <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+</form>

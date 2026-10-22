@@ -1,0 +1,26 @@
+@model List<Municipality>
+
+@{
+    ViewData["Title"] = "Municipalities";
+}
+
+<h1>Municipalities</h1>
+
+@foreach (var m in Model)
+{
+    <section class="border-bottom py-3">
+        @if (m.LogoFileName != null && !m.LogoFileName.StartsWith("seed-"))
+        {
+            <img src="/uploads/@m.LogoFileName" class="logo" alt="@m.Name logo" />
+        }
+
+        <h2 class="h4">
+            <a asp-controller="Home" asp-action="Index" asp-route-municipalityId="@m.MunicipalityId">@m.Name</a>
+        </h2>
+
+        <p>@m.Province · @m.ElectionDate.ToString("MMMM d, yyyy")</p>
+        <p>@m.Description</p>
+
+        <div class="small text-body-secondary">@string.Join(" · ", m.Positions.Select(p => $"{p.Name}: {p.SeatsAvailable} seats"))</div>
+    </section>
+}
