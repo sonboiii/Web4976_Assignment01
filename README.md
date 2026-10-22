@@ -5,7 +5,7 @@ CivicVote municipal elections app, adapted from W-mems into WA1's standard ASP.N
 ## Run
 
 ```bash
-dotnet run --project Web4976_Assignment01.csproj --launch-profile http
+./run.sh
 ```
 
 Open http://localhost:5159. WA1 includes the W-mems database in `app.db`. Startup applies migrations; Development also seeds the demo if the database is empty and `SeedDemo` is enabled in `appsettings.Development.json`.
