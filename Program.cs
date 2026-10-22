@@ -81,7 +81,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "App_Data"));
     await db.Database.MigrateAsync();
-    await SeedData.InitializeAsync(scope.ServiceProvider, app.Environment, app.Configuration);
+    await SeedData.InitializeAsync(scope.ServiceProvider);
 }
 
 app.Run();

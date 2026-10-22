@@ -7,10 +7,8 @@ namespace Web4976_Assignment01.Data;
 
 public static class SeedData
 {
-    public static async Task InitializeAsync(IServiceProvider services, IWebHostEnvironment env, IConfiguration config)
+    public static async Task InitializeAsync(IServiceProvider services)
     {
-        if (!env.IsDevelopment() || !config.GetValue<bool>("SeedDemo"))
-            return;
         var db = services.GetRequiredService<ApplicationDbContext>();
 
         if (!await db.Municipalities.AnyAsync())

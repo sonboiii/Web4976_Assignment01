@@ -18,4 +18,9 @@ TestResults/
 ## Local application state
 App_Data/
 wwwroot/uploads/
+appsettings.Development.json
+*.db
+*.db-shm
+*.db-wal
+*.db.bak
 app.db-*
