@@ -1,0 +1,147 @@
+@inject HttpClient Http
+@inject IJSRuntime JS
+@if (loadError != null)
+{ <h1>Election directory</h1><p role="alert">@loadError</p><a href="/">Browse municipalities</a> }
+else if (town == null || (!Administrator && selections == null))
+{ <p role="status">Loading election information…</p> }
+else
+{
+    <PageTitle>@town.Name · CivicVote</PageTitle>
+    <section class="tenant-banner" style="@($"--accent:{town.Accent}")">
+        <img src="@($"{ApiRoot}/logo")" alt="" width="68" height="68" />
+        <div><h1>@town.Name</h1><p>@town.Province · Election day @town.ElectionDate.ToString("MMMM d, yyyy")</p></div>
+    </section>
+    <nav class="tabs no-print" aria-label="Election pages">
+        <a href="@Root" aria-current="@(Mode == "directory" ? "page" : null)">Candidates</a>
+        @if (!Administrator)
+        {
+        <a href="@($"{Root}/compare")" aria-current="@(Mode == "compare" ? "page" : null)">Compare (@selections!.Comparison.Count)</a>
+        <a href="/guide">Voting guide</a>
+        }
+    </nav>
+    @if (notice != null) { <p class="alert alert-info no-print" role="status">@notice</p> }
+    @if (Administrator && Mode is "guide" or "compare")
+    { <h2>Visitor selections</h2><p>Voting guides and comparisons are available to visitors.</p> }
+    else if (Mode == "guide")
+    {
+        <h2>@town.Name voting guide</h2>
+        <p class="no-print"><a href="/guide">View the combined guide for all municipalities</a></p>
+        <p class="no-print">Your choices stay in this browser tab until its session ends.</p>
+        <p class="print-date">Print date · @DateTime.Now.ToString("MMMM d, yyyy")</p>
+        @if (selections!.Guide.Count == 0) { <p>Your guide is empty. <a href="@Root">Browse candidates</a></p> }
+        else
+        {
+            @foreach (var office in positions)
+            {
+                var chosen = candidates.Where(c => c.PositionId == office.Id && selections!.Guide.Contains(c.Id)).ToList();
+                if (chosen.Count == 0) continue;
+                <section class="guide-group"><h3>@office.Name</h3><ul>
+                @foreach (var c in chosen)
+                { <li>@c.Name <button class="link-button no-print" @onclick="() => Toggle(c, false)">Remove<span class="visually-hidden"> @c.Name</span></button></li> }
+                </ul></section>
+            }
+            <div class="actions no-print"><button class="btn btn-primary" @onclick="Print">Print guide</button>
+                <button class="btn btn-outline-secondary" @onclick="Clear">Clear guide</button></div>
+        }
+    }
+    else if (Mode == "directory")
+    {
+        <p class="lede">@town.Description</p>
+        <div class="filters">
+            <label>Candidate name<input class="form-control" type="search" placeholder="Search by name" @bind="search" @bind:event="oninput" @bind:after="FirstPage" /></label>
+            <label>Position<select class="form-select" @bind="position" @bind:after="FirstPage"><option value="0">All positions</option>
+                @foreach (var p in positions) { <option value="@p.Id">@p.Name (@p.SeatsAvailable seats)</option> }</select></label>
+            <label>Sort<select class="form-select" @bind="sort" @bind:after="FirstPage"><option value="name">Name A–Z</option><option value="newest">Newest</option></select></label>
+        </div>
+        <h2>Candidate directory</h2>
+        var matches = Matches.ToList();
+        @if (matches.Count == 0) { <p>No candidates match these filters.</p> }
+        else
+        {
+            <div class="profiles">@foreach (var c in matches.Skip(page * 6).Take(6)) { @Card(c, false) }</div>
+            @if (matches.Count > 6)
+            { <nav class="actions" aria-label="Directory pages">
+                <button class="btn btn-outline-secondary" disabled="@(page == 0)" @onclick="() => page--">Previous</button>
+                Page @(page + 1) of @((matches.Count + 5) / 6)
+                <button class="btn btn-outline-secondary" disabled="@((page + 1) * 6 >= matches.Count)" @onclick="() => page++">Next</button>
+              </nav> }
+        }
+    }
+    else if (Mode == "compare")
+    {
+        <h2>Compare candidates</h2>
+        @if (selections!.Comparison.Count == 0) { <p>Choose up to three profiles in the <a href="@Root">candidate directory</a>.</p> }
+        <div class="profiles">@foreach (var c in candidates.Where(c => selections!.Comparison.Contains(c.Id))) { @Card(c, true) }</div>
+    }
+    else if (Mode == "detail" && candidates.Find(c => c.Id == CandidateId) is { } item)
+    { <div class="detail">@Card(item, true)</div> }
+    else { <h2>Page unavailable</h2><p>This page does not exist in @town.Name.</p> }
+}
+
+@code {
+    [CascadingParameter(Name = "Administrator")] public bool Administrator { get; set; }
+    [Parameter] public string Slug { get; set; } = "";
+    [Parameter] public string? Section { get; set; }
+    [Parameter] public int? CandidateId { get; set; }
+    private string Root => "/" + Uri.EscapeDataString(Slug.ToLowerInvariant());
+    private string ApiRoot => "/api" + Root;
+    private string Mode => CandidateId.HasValue ? "detail" : Section?.ToLowerInvariant() ?? "directory";
+    private Municipality? town;
+    private List<Position> positions = [];
+    private List<Candidate> candidates = [];
+    private Selections? selections;
+    private string? loadError, notice;
+    private string search = "", sort = "name";
+    private int position, page;
+    private IEnumerable<Candidate> Matches
+    {
+        get
+        {
+            var list = candidates.Where(c => (position == 0 || c.PositionId == position) && c.Name.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase));
+            return sort == "newest" ? list.OrderByDescending(c => c.DateCreated).ThenBy(c => c.Id) : list.OrderBy(c => c.Name).ThenBy(c => c.Id);
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            town = await Http.GetFromJsonAsync<Municipality>($"{ApiRoot}/municipality");
+            positions = await Http.GetFromJsonAsync<List<Position>>($"{ApiRoot}/positions") ?? [];
+            candidates = await Http.GetFromJsonAsync<List<Candidate>>($"{ApiRoot}/candidates") ?? [];
+            candidates.RemoveAll(c => !positions.Any(p => p.Id == c.PositionId));
+            if (Administrator) return;
+            selections = new(positions, candidates);
+            try
+            {
+                var guide = await JS.InvokeAsync<int[]>("civic.read", town!.Id, "guide");
+                var comparison = await JS.InvokeAsync<int[]>("civic.read", town.Id, "compare");
+                selections.Restore(guide, comparison);
+            }
+            catch (JSException) { notice = "Browser storage is unavailable. Refreshing this page may clear your choices."; }
+        }
+        catch (HttpRequestException ex)
+        { loadError = ex.StatusCode == System.Net.HttpStatusCode.NotFound ? "Municipality not found." : "Election information is unavailable. Please try again."; }
+    }
+    protected override void OnParametersSet() { page = 0; }
+    private void FirstPage() => page = 0;
+    private async Task Toggle(Candidate c, bool compare)
+    {
+        notice = compare ? selections!.ToggleComparison(c.Id) : selections!.ToggleGuide(c);
+        if (notice == null) await Persist(compare);
+    }
+    private async Task Clear()
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "Clear the guide for this municipality?")) return;
+        selections!.Guide.Clear(); notice = null;
+        await Persist(false);
+    }
+    private async Task Persist(bool compare)
+    {
+        try { await JS.InvokeVoidAsync("civic.write", town!.Id, compare ? "compare" : "guide", (compare ? selections!.Comparison : selections!.Guide).ToArray()); }
+        catch (JSException) { notice = "Browser storage is unavailable. Keep this page open to retain your choices."; }
+    }
+    private async Task Print() => await JS.InvokeVoidAsync("print");
+    private RenderFragment Card(Candidate c, bool full) => @<CandidateCard Candidate="c" Office="positions.First(p => p.Id == c.PositionId)"
+        Root="@Root" Full="full" Selected="@(selections?.Guide.Contains(c.Id) == true)" Compared="@(selections?.Comparison.Contains(c.Id) == true)"
+        GuideClick="() => Toggle(c, false)" CompareClick="() => Toggle(c, true)" />;
+}

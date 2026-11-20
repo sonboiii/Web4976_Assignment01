@@ -1,0 +1,43 @@
+<EditForm Model="Model" OnValidSubmit="Saved" @key="Model">
+    <DataAnnotationsValidator /><ValidationSummary />
+    @if (Model is MunicipalityForm m)
+    {
+        <label>Municipality name<InputText class="form-control" @bind-Value="m.Name" /></label>
+        <label>Tenant URL segment<InputText class="form-control" @bind-Value="m.Slug" /></label>
+        <label>Province<InputText class="form-control" @bind-Value="m.Province" /></label>
+        <label>Election date<InputDate class="form-control" @bind-Value="m.ElectionDate" /></label>
+        <label>Municipality colour<InputText class="form-control form-control-color" type="color" @bind-Value="m.Accent" /></label>
+        <label>Public description<InputTextArea class="form-control" rows="3" @bind-Value="m.Description" /></label>
+    }
+    else if (Model is PositionForm p)
+    {
+        <label>Position name<InputText class="form-control" @bind-Value="p.Name" /></label>
+        <label>Seats available<InputNumber class="form-control" @bind-Value="p.SeatsAvailable" /></label>
+    }
+    else if (Model is CandidateForm c)
+    {
+        <label>Candidate name<InputText class="form-control" @bind-Value="c.Name" /></label>
+        <label>Position<InputSelect class="form-select" @bind-Value="c.PositionId">
+            <option value="0">Choose a position</option>
+            @foreach (var p0 in Positions) { <option value="@p0.Id">@p0.Name</option> }
+        </InputSelect></label>
+        <label>Campaign focus<InputText class="form-control" @bind-Value="c.Tagline" /></label>
+        <label>Biography<InputTextArea class="form-control" rows="5" @bind-Value="c.Profile" /></label>
+        <label>Email<InputText class="form-control" type="email" @bind-Value="c.Email" /></label>
+        <label>Website<InputText class="form-control" type="url" @bind-Value="c.Website" /></label>
+        <label>Social media URL<InputText class="form-control" type="url" @bind-Value="c.SocialUrl" /></label>
+        <label>Video URL<InputText class="form-control" type="url" @bind-Value="c.VideoUrl" /></label>
+    }
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" disabled="@Busy">Save</button>
+        <button class="btn btn-outline-secondary" type="button" @onclick="Cancel">Cancel</button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public object Model { get; set; } = null!;
+    [Parameter] public List<Position> Positions { get; set; } = [];
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback Saved { get; set; }
+    [Parameter] public EventCallback Cancel { get; set; }
+}

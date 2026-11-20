@@ -1,0 +1,11 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.5">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>mems-wa2-apphost</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MEMS.Api/MEMS.Api.csproj" />
+    <ProjectReference Include="../MEMS.Admin/MEMS.Admin.csproj" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.6.5" />
+  </ItemGroup>
+</Project>

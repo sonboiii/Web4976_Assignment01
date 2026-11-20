@@ -1,0 +1,30 @@
+<article class="profile">
+    <div class="identity"><img loading="lazy" src="@($"/api{Root}/candidates/{Candidate.Id}/photo")" alt="@($"Portrait of {Candidate.Name}")" />
+        <div><p>@Office.Name</p><h3><a href="@($"{Root}/candidates/{Candidate.Id}")">@Candidate.Name</a></h3></div>
+    </div>
+    @if (!string.IsNullOrEmpty(Candidate.Tagline)) { <p>@Candidate.Tagline</p> }
+    @if (Full)
+    {
+        <p>@Office.SeatsAvailable @(Office.SeatsAvailable == 1 ? "seat" : "seats") available</p>
+        <p class="bio">@Candidate.Profile</p>
+        <div class="actions">@foreach (var (label, url) in new[] { ("Website", Candidate.Website), ("Social media", Candidate.SocialUrl), ("Video", Candidate.VideoUrl) })
+        { @if (!string.IsNullOrEmpty(url)) { <a href="@url" rel="noreferrer">@label</a> } }
+        @if (!string.IsNullOrEmpty(Candidate.Email)) { <a href="@($"mailto:{Candidate.Email}")">Email</a> }</div>
+    }
+    @if (!Administrator)
+    {
+    <div class="actions"><button class="btn btn-sm btn-outline-primary" aria-pressed="@(Selected ? "true" : "false")" @onclick="GuideClick">@(Selected ? "Remove from guide" : "Add to guide")</button>
+        <button class="btn btn-sm btn-outline-secondary" aria-pressed="@(Compared ? "true" : "false")" @onclick="CompareClick">@(Compared ? "Remove comparison" : "Compare")</button></div>
+    }
+</article>
+@code {
+    [CascadingParameter(Name = "Administrator")] public bool Administrator { get; set; }
+    [Parameter, EditorRequired] public Candidate Candidate { get; set; } = null!;
+    [Parameter, EditorRequired] public Position Office { get; set; } = null!;
+    [Parameter] public string Root { get; set; } = "";
+    [Parameter] public bool Selected { get; set; }
+    [Parameter] public bool Compared { get; set; }
+    [Parameter] public bool Full { get; set; }
+    [Parameter] public EventCallback GuideClick { get; set; }
+    [Parameter] public EventCallback CompareClick { get; set; }
+}

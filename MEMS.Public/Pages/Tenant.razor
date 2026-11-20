@@ -1,0 +1,9 @@
+@page "/{Slug}"
+@page "/{Slug}/{Section}"
+@page "/{Slug}/candidates/{CandidateId:int}"
+<TenantDirectory Slug="@Slug" Section="@Section" CandidateId="CandidateId" @key="Slug.ToLowerInvariant()" />
+@code {
+    [Parameter] public string Slug { get; set; } = "";
+    [Parameter] public string? Section { get; set; }
+    [Parameter] public int? CandidateId { get; set; }
+}

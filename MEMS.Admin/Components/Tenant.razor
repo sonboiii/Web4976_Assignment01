@@ -1,0 +1,4 @@
+@page "/admin/tenant/{Slug}"
+@attribute [Authorize]
+<TenantWorkspace Slug="@Slug" @key="Slug" />
+@code { [Parameter] public string Slug { get; set; } = ""; }

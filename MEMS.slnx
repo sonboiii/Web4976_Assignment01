@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="MEMS.Shared/MEMS.Shared.csproj" />
+  <Project Path="MEMS.Data/MEMS.Data.csproj" />
+  <Project Path="MEMS.ServiceDefaults/MEMS.ServiceDefaults.csproj" />
+  <Project Path="MEMS.Api/MEMS.Api.csproj" />
+  <Project Path="MEMS.Admin/MEMS.Admin.csproj" />
+  <Project Path="MEMS.Public/MEMS.Public.csproj" />
+  <Project Path="MEMS.AppHost/MEMS.AppHost.csproj" />
+</Solution>

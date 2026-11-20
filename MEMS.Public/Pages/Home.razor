@@ -1,0 +1,35 @@
+@page "/"
+@inject HttpClient Http
+<PageTitle>Municipal elections · CivicVote</PageTitle>
+<section class="intro"><h1>Municipal elections</h1>
+<p>@(Administrator ? "Choose a municipality to explore its election information." : "Choose a municipality to explore its candidates and prepare your personal voting guide.")</p></section>
+@if (error)
+{ <p role="alert">The directory is unavailable. <button class="link-button" @onclick="Load">Try again</button></p> }
+else if (towns == null) { <p role="status">Loading municipalities…</p> }
+else if (towns.Count == 0) { <p>No municipalities have been published yet.</p> }
+else
+{
+    <div class="town-grid">
+    @foreach (var m in towns)
+    {
+        <a class="town-card" href="@($"/{m.Slug}")" style="@($"--accent:{m.Accent}")">
+            <img src="@($"/api/{m.Slug}/logo")" alt="" width="60" height="60" />
+            <div><h2>@m.Name</h2><p>@m.Province</p></div>
+            <p class="town-description">@m.Description</p>
+            <div class="town-foot"><span>@m.ElectionDate.ToString("MMMM d, yyyy")</span><span aria-hidden="true">→</span></div>
+        </a>
+    }
+    </div>
+}
+@code {
+    [CascadingParameter(Name = "Administrator")] public bool Administrator { get; set; }
+    private List<Municipality>? towns;
+    private bool error;
+    protected override Task OnInitializedAsync() => Load();
+    private async Task Load()
+    {
+        error = false;
+        try { towns = await Http.GetFromJsonAsync<List<Municipality>>("api/municipalities"); }
+        catch (HttpRequestException) { error = true; }
+    }
+}

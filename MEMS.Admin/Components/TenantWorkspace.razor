@@ -1,0 +1,150 @@
+@inherits AdminPage
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<a href="/admin">Dashboard</a>
+@if (Error != null) { <p class="alert alert-danger" role="alert">@Error</p> }
+@if (town != null)
+{
+    <h1>@town.Name</h1>
+    @if (record != null)
+    {
+        <section class="panel">
+        <h2>@(editing ? (path.EndsWith("/" + recordId) ? "Edit " : "New ") + kind : kind + " details")</h2>
+        @if (editing)
+        {
+            <Editor Model="record" Positions="positions" Busy="Busy" Saved="Save" Cancel="Close" />
+        }
+        else
+        {
+            @if (image != null) { <img class="portrait mb-3" alt="@kind image" src="@image" /> }
+            @switch (record)
+            {
+                case Municipality m:
+                    <h3>@m.Name</h3><p>@m.Description</p><p>@m.Province · @m.ElectionDate.ToString("MMMM d, yyyy") · /@m.Slug</p>
+                    break;
+                case Position p:
+                    <h3>@p.Name</h3><p>@p.SeatsAvailable seats · @candidates.Count(c => c.PositionId == p.Id) candidates</p>
+                    @foreach (var c0 in candidates.Where(c => c.PositionId == p.Id)) { <div>@c0.Name</div> }
+                    break;
+                case Candidate c:
+                    <h3>@c.Name</h3><p>@positions.Find(p => p.Id == c.PositionId)?.Name · @c.Tagline</p><p class="bio">@c.Profile</p>
+                    <p>@c.Email @c.Website @c.SocialUrl @c.VideoUrl</p>
+                    break;
+            }
+            @if (record is Position or Candidate)
+            {
+                <AuthorizeView Roles="@Roles.Super">
+                    <Transfer Path="@path" CurrentId="town.Id" IsCandidate="@(record is Candidate)" Moved="AfterMove" @key="path" />
+                </AuthorizeView>
+            }
+            @if (imagePath != null)
+            {
+                <label>Replace @(record is Municipality ? "logo" : "photograph") (JPG, PNG or WebP, up to 2 MB)
+                    <InputFile class="form-control" accept="image/jpeg,image/png,image/webp" OnChange="Upload" disabled="@Busy" /></label>
+            }
+            <div class="toolbar">
+                <button class="btn btn-primary" @onclick="() => editing = true">Edit</button>
+                @if (record is Municipality)
+                { <AuthorizeView Roles="@Roles.Super"><button class="btn btn-outline-danger" @onclick="Delete">Delete municipality</button></AuthorizeView> }
+                else { <button class="btn btn-outline-danger" @onclick="Delete">Delete @kind.ToLowerInvariant()</button> }
+                <button class="btn btn-outline-secondary" @onclick="Close">Close</button>
+            </div>
+        }
+        </section>
+    }
+    else
+    {
+        <p>@town.Description</p>
+        <button class="btn btn-outline-primary mb-3" @onclick="() => Show(town)">Municipality details and logo</button>
+        <section class="panel"><div class="toolbar"><h2>Positions</h2>
+            <button class="btn btn-outline-primary" @onclick="() => NewPosition()">Add position</button></div>
+        @foreach (var p in positions)
+        { <button class="record" @onclick="() => Show(p)"><strong>@p.Name</strong><span>@p.SeatsAvailable seats</span></button> }
+        @if (positions.Count == 0) { <p>No positions yet.</p> }
+        </section>
+        <section class="panel"><div class="toolbar"><h2>Candidates</h2>
+            <button class="btn btn-outline-primary" disabled="@(positions.Count == 0)" @onclick="NewCandidate">Add candidate</button></div>
+        <label>Search candidates<input class="form-control" type="search" @bind="Search" @bind:event="oninput" /></label>
+        @foreach (var c in Filtered.Skip(page * 12).Take(12))
+        { <button class="record" @onclick="() => Show(c)"><strong>@c.Name</strong><span>@positions.Find(p => p.Id == c.PositionId)?.Name</span></button> }
+        @if (!Filtered.Any()) { <p>No matching candidates.</p> }
+        @if (Filtered.Count() > 12)
+        {
+            <div class="toolbar"><button disabled="@(page == 0)" @onclick="() => page--">Previous</button>
+            Page @(page + 1)<button disabled="@(12 * (page + 1) >= Filtered.Count())" @onclick="() => page++">Next</button></div>
+        }
+        </section>
+    }
+}
+@code {
+    [Parameter] public string Slug { get; set; } = "";
+    private string Root => $"/api/{Uri.EscapeDataString(Slug)}";
+    private Municipality? town;
+    private List<Position> positions = [];
+    private List<Candidate> candidates = [];
+    private object? record;
+    private int recordId, page;
+    private string search = "", kind = "", path = "";
+    private string? imagePath, image;
+    private bool editing;
+    private string Search { get => search; set { search = value; page = 0; } }
+    private IEnumerable<Candidate> Filtered => candidates.Where(c => c.Name.Contains(search, StringComparison.OrdinalIgnoreCase));
+
+    protected override Task OnInitializedAsync() => Run(Load);
+    private async Task Load()
+    {
+        town = await Api.Get<Municipality>($"{Root}/municipality");
+        positions = await Api.Get<List<Position>>($"{Root}/positions");
+        candidates = await Api.Get<List<Candidate>>($"{Root}/candidates");
+        page = 0;
+    }
+    private void Close() { record = null; imagePath = null; image = null; editing = false; }
+    private void Start(object model, string label, string resource, int id = 0)
+    {
+        Close(); Error = null; record = model; kind = label; path = resource; recordId = id; editing = id == 0;
+    }
+    private void NewPosition() => Start(new PositionForm(), "Position", $"{Root}/positions");
+    private void NewCandidate() => Start(new CandidateForm(), "Candidate", $"{Root}/candidates");
+    private Task Show(object row) => Run(async () =>
+    {
+        switch (row)
+        {
+            case Municipality m:
+                Start(await Api.Get<Municipality>($"/api/municipalities/{m.Id}"), "Municipality", $"/api/municipalities/{m.Id}", m.Id);
+                imagePath = $"{Root}/logo"; break;
+            case Position p:
+                Start(await Api.Get<Position>($"{Root}/positions/{p.Id}"), "Position", $"{Root}/positions/{p.Id}", p.Id); break;
+            case Candidate c:
+                Start(await Api.Get<Candidate>($"{Root}/candidates/{c.Id}"), "Candidate", $"{Root}/candidates/{c.Id}", c.Id);
+                imagePath = path + "/photo"; break;
+        }
+        if (imagePath != null) image = await Api.Image(imagePath);
+    });
+    private Task Save() => Run(async () =>
+    {
+        await Api.Write(recordId == 0 ? HttpMethod.Post : HttpMethod.Put, path, record);
+        if (record is Municipality m && m.Slug != Slug) { Nav.NavigateTo("/admin/tenant/" + m.Slug); return; }
+        Close(); await Load();
+    });
+    private Task Delete() => Run(async () =>
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"Delete this {kind.ToLowerInvariant()}?")) return;
+        await Api.Write(HttpMethod.Delete, path);
+        if (record is Municipality) { Nav.NavigateTo("/admin"); return; }
+        Close(); await Load();
+    });
+    private Task AfterMove() => Run(async () => { Close(); await Load(); });
+    private Task Upload(InputFileChangeEventArgs args) => Run(async () =>
+    {
+        var file = args.File;
+        if (file.Size > ElectionImage.MaxBytes) throw new ApplicationException(ElectionImage.Requirements);
+        await using var stream = file.OpenReadStream(ElectionImage.MaxBytes);
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer);
+        var bytes = buffer.ToArray();
+        if (ElectionImage.ContentType(bytes) == null) throw new ApplicationException(ElectionImage.Requirements);
+        await Api.Upload(imagePath!, bytes);
+        image = await Api.Image(imagePath!);
+    });
+}

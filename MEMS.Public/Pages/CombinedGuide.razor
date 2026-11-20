@@ -1,0 +1,95 @@
+@page "/guide"
+@inject HttpClient Http
+@inject IJSRuntime JS
+<PageTitle>Personal voting guide · CivicVote</PageTitle>
+<h1>Personal voting guide</h1>
+@if (Administrator)
+{
+    <p>Voting guides are available to visitors. <a href="/admin" target="_top">Open administration</a></p>
+}
+else if (error != null)
+{
+    <p role="alert">@error <button class="link-button" @onclick="Load">Try again</button></p>
+}
+else if (groups == null)
+{
+    <p role="status">Loading voting guide…</p>
+}
+else if (groups.Count == 0)
+{
+    <p>Your guide is empty. Choose candidates in one or more municipalities to build it.</p>
+    <a href="/">Browse municipalities</a>
+}
+else
+{
+    <p>Print date · @DateTime.Now.ToString("MMMM d, yyyy")</p>
+    @foreach (var group in groups)
+    {
+        <section class="guide-group">
+            <h2>@group.Town.Name</h2>
+            <p>Election day · @group.Town.ElectionDate.ToString("MMMM d, yyyy")</p>
+            @foreach (var p in group.Offices)
+            {
+                var chosen = group.Candidates.Where(c => c.PositionId == p.Id && group.Choices.Guide.Contains(c.Id)).ToList();
+                if (chosen.Count == 0) continue;
+                <h3>@p.Name</h3><ul>
+                @foreach (var c in chosen)
+                { <li>@c.Name <button class="link-button no-print" @onclick="() => Remove(group, c)">Remove<span class="visually-hidden"> @c.Name</span></button></li> }
+                </ul>
+            }
+        </section>
+    }
+    <div class="actions no-print"><button class="btn btn-primary" @onclick="Print">Print guide</button>
+        <a href="/">Choose another municipality</a><button class="btn btn-outline-secondary" @onclick="Clear">Clear guide</button></div>
+}
+
+@code {
+    [CascadingParameter(Name = "Administrator")] public bool Administrator { get; set; }
+    private record Group(Municipality Town, List<Position> Offices, List<Candidate> Candidates, Selections Choices);
+    private List<Group>? groups;
+    private string? error;
+    protected override Task OnInitializedAsync() => Administrator ? Task.CompletedTask : Load();
+
+    private async Task Load()
+    {
+        error = null;
+        try
+        {
+            var towns = await Http.GetFromJsonAsync<List<Municipality>>("/api/municipalities") ?? [];
+            var result = new List<Group>();
+            // Request the same public slates for every visitor, irrespective of which cities or candidates they chose.
+            foreach (var town in towns)
+            {
+                var root = "/api/" + Uri.EscapeDataString(town.Slug);
+                var offices = await Http.GetFromJsonAsync<List<Position>>(root + "/positions") ?? [];
+                var slate = await Http.GetFromJsonAsync<List<Candidate>>(root + "/candidates") ?? [];
+                slate.RemoveAll(c => !offices.Any(p => p.Id == c.PositionId));
+                var saved = await JS.InvokeAsync<int[]>("civic.read", town.Id, "guide");
+                var choices = new Selections(offices, slate);
+                choices.Restore(saved, []);
+                if (choices.Guide.Count > 0) result.Add(new(town, offices, slate, choices));
+            }
+            groups = result;
+        }
+        catch (HttpRequestException) { error = "The election directory is unavailable."; }
+        catch (JSException) { error = "The browser could not open this tab’s voting guide."; }
+    }
+    private async Task Remove(Group group, Candidate c)
+    {
+        var remaining = group.Choices.Guide.Where(id => id != c.Id).ToArray();
+        try
+        {
+            await JS.InvokeVoidAsync("civic.write", group.Town.Id, "guide", remaining);
+            group.Choices.Guide.Remove(c.Id);
+            if (remaining.Length == 0) groups!.Remove(group);
+        }
+        catch (JSException) { error = "The browser could not save this change."; }
+    }
+    private async Task Clear()
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", "Clear selections from all municipalities?")) return;
+        try { await JS.InvokeVoidAsync("civic.clearGuides"); groups!.Clear(); }
+        catch (JSException) { error = "The browser could not clear this guide."; }
+    }
+    private async Task Print() => await JS.InvokeVoidAsync("print");
+}

@@ -1,0 +1,40 @@
+@page "/admin/accounts"
+@attribute [Authorize(Roles = Roles.Super)]
+@inherits AdminPage
+@inject IJSRuntime JS
+<a href="/admin">Dashboard</a><h1>Administrators</h1>
+@if (Error != null) { <p role="alert" class="alert alert-danger">@Error</p> }
+<section class="panel"><h2>Assign an administrator</h2>
+<EditForm Model="form" OnValidSubmit="Create" @key="form"><DataAnnotationsValidator /><ValidationSummary />
+    <label>Username<InputText class="form-control" @bind-Value="form.Username" /></label>
+    <label>Password<InputText class="form-control" type="password" autocomplete="new-password" @bind-Value="form.Password" /></label>
+    <label>Municipality<InputSelect class="form-select" @bind-Value="form.MunicipalityId"><option value="0">Choose a municipality</option>
+        @foreach (var m in towns) { <option value="@m.Id">@m.Name</option> }
+    </InputSelect></label>
+    <button class="btn btn-primary" disabled="@Busy">Create account</button>
+</EditForm></section>
+<ul class="list-group">@foreach (var u in accounts)
+{
+    <li class="list-group-item toolbar"><strong>@u.Username</strong>
+        @(towns.Find(m => m.Id == u.MunicipalityId)?.Name ?? "All municipalities")
+        @if (u.MunicipalityId.HasValue) { <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(u)">Remove</button> }
+    </li>
+}</ul>
+@code {
+    private AdministratorForm form = new();
+    private List<Municipality> towns = [];
+    private List<Administrator> accounts = [];
+    protected override Task OnInitializedAsync() => Run(async () =>
+    {
+        towns = await Api.Get<List<Municipality>>("/api/municipalities");
+        await Load();
+    });
+    private async Task Load() => accounts = await Api.Get<List<Administrator>>("/api/administrators");
+    private Task Create() => Run(async () => { await Api.Write(HttpMethod.Post, "/api/administrators", form); form = new(); await Load(); });
+    private Task Delete(Administrator u) => Run(async () =>
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"Remove {u.Username}'s access?")) return;
+        await Api.Write(HttpMethod.Delete, $"/api/administrators/{u.Id}");
+        await Load();
+    });
+}

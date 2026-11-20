@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <EmbeddedResource Include="Portraits/*.svg" LogicalName="MEMS.Api.Portraits.%(Filename)%(Extension)" />
+    <ProjectReference Include="../MEMS.Data/MEMS.Data.csproj" />
+    <ProjectReference Include="../MEMS.ServiceDefaults/MEMS.ServiceDefaults.csproj" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.15" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

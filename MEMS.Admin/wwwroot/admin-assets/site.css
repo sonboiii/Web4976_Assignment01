@@ -1,0 +1,10 @@
+body{background:#f5f5f0;color:#202e2b;font-family:system-ui,sans-serif}
+.mast{background:#203c34;color:white;padding:1rem 0}.brand{color:white;text-decoration:none;font-weight:750;font-size:1.4rem}
+.brand span{font-size:.9rem;font-weight:450;margin-left:.5rem} h1,h2,h3{font-family:Georgia,serif} h1{margin:1rem 0 1.5rem}
+h2{font-size:1.55rem}.panel{background:white;border:1px solid #d8ded8;border-radius:.5rem;padding:clamp(1rem,3vw,2rem);margin-bottom:1.2rem}
+.metric{display:block;font:2.8rem Georgia,serif}.toolbar,.record{display:flex;align-items:center;flex-wrap:wrap;gap:.75rem}
+.toolbar{margin-bottom:1rem}.toolbar h2{margin:0 auto 0 0}.record{width:100%;justify-content:space-between;text-align:left;background:white;border:0;border-top:1px solid #d8ded8;padding:.8rem .25rem;color:#20594e}
+.record:hover,.record:focus-visible{background:#f1f6f3}.login{max-width:30rem;margin:2rem auto}
+label{display:block;max-width:42rem;margin-bottom:1rem;font-weight:600}label .form-control,label .form-select{margin-top:.25rem}.bio{white-space:pre-line}
+.portrait{width:7rem;height:7rem;object-fit:cover;border-radius:.4rem}.validation-errors{color:#9e301f}.btn-primary{--bs-btn-bg:#225e50;--bs-btn-border-color:#225e50}
+#blazor-error-ui{background:#fff0c0;padding:1rem;position:fixed;bottom:0;width:100%}

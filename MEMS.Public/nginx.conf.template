@@ -1,0 +1,11 @@
+server {
+    listen 8080;
+    root /usr/share/nginx/html;
+    add_header X-Content-Type-Options nosniff always;
+    location = /health { return 200 "Ready"; }
+    location / {
+        # The browser uses the HTTPS gateway so public and admin pages share one Identity session.
+        if ($http_x_mems_static != "1") { return 307 https://$host:${SITE_HTTPS_PORT}$request_uri; }
+        try_files $uri $uri/ /index.html;
+    }
+}

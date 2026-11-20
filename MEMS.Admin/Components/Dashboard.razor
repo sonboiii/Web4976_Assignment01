@@ -1,0 +1,45 @@
+@page "/admin"
+@attribute [Authorize]
+@inherits AdminPage
+@inject NavigationManager Nav
+
+<h1>Election dashboard</h1>
+@if (Error != null) { <p class="alert alert-danger" role="alert">@Error</p> }
+@if (totals != null)
+{
+    <div class="row g-3 mb-4">
+    @foreach (var stat in new[] { ("Municipalities", totals.Municipalities), ("Positions", totals.Positions), ("Candidates", totals.Candidates) })
+    { <div class="col-sm-4"><div class="panel"><strong class="metric">@stat.Item2</strong>@stat.Item1</div></div> }
+    </div>
+    <div class="toolbar"><h2>Municipalities</h2>
+        <AuthorizeView Roles="@Roles.Super">
+            <button class="btn btn-primary" @onclick="() => creating = true">Add municipality</button>
+            <a class="btn btn-outline-secondary" href="/admin/accounts">Administrators</a>
+        </AuthorizeView>
+    </div>
+    @if (creating)
+    {
+        <section class="panel"><h3>New municipality</h3><Editor Model="form" Busy="Busy" Saved="Create" Cancel="() => creating = false" /></section>
+    }
+    <div class="list-group">
+    @foreach (var m in municipalities)
+    { <a class="list-group-item list-group-item-action d-flex justify-content-between" href="@($"/admin/tenant/{m.Slug}")">@m.Name <span>@m.ElectionDate.ToString("MMM d, yyyy")</span></a> }
+    </div>
+}
+
+@code {
+    private Totals? totals;
+    private List<Municipality> municipalities = [];
+    private MunicipalityForm form = new();
+    private bool creating;
+    protected override Task OnInitializedAsync() => Run(async () =>
+    {
+        totals = await Api.Get<Totals>("/api/dashboard");
+        municipalities = await Api.Get<List<Municipality>>("/api/municipalities");
+    });
+    private Task Create() => Run(async () =>
+    {
+        await Api.Write(HttpMethod.Post, "/api/municipalities", form);
+        Nav.NavigateTo($"/admin/tenant/{form.Slug}");
+    });
+}

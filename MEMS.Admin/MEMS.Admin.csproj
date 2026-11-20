@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="../MEMS.Shared/MEMS.Shared.csproj" />
+    <ProjectReference Include="../MEMS.ServiceDefaults/MEMS.ServiceDefaults.csproj" />
+  </ItemGroup>
+</Project>

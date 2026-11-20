@@ -1,0 +1,12 @@
+@page "/admin/login"
+
+<section class="panel login"><h1>Administrator sign-in</h1>
+@if (Failed) { <p role="alert" class="alert alert-danger">Sign-in failed. Check your username and password, or try again later.</p> }
+<form method="post" action="/admin/session">
+    <AntiforgeryToken />
+    <label>Username<input class="form-control" name="username" autocomplete="username" required /></label>
+    <label>Password<input class="form-control" name="password" type="password" autocomplete="current-password" required /></label>
+    <button class="btn btn-primary">Sign in</button>
+</form></section>
+
+@code { [SupplyParameterFromQuery] public bool Failed { get; set; } }

@@ -1,0 +1,38 @@
+@inherits AdminPage
+<details class="my-3"><summary>Move to another municipality</summary>
+@if (Error != null) { <p class="alert alert-danger" role="alert">@Error</p> }
+<EditForm Model="form" OnValidSubmit="Move"><DataAnnotationsValidator /><ValidationSummary />
+    <label>Destination municipality<InputSelect class="form-select" @bind-Value="form.MunicipalityId" @bind-Value:after="LoadPositions">
+        <option value="0">Choose a municipality</option>
+        @foreach (var m in towns.Where(m => m.Id != CurrentId)) { <option value="@m.Id">@m.Name</option> }
+    </InputSelect></label>
+    @if (IsCandidate)
+    {
+        <label>Destination position<InputSelect class="form-select" @bind-Value="form.PositionId">
+            <option value="">Choose a position</option>
+            @foreach (var p in positions) { <option value="@p.Id">@p.Name</option> }
+        </InputSelect></label>
+    }
+    <button class="btn btn-outline-primary" disabled="@(Busy || (IsCandidate && form.PositionId == null))">Move</button>
+</EditForm></details>
+@code {
+    [Parameter] public int CurrentId { get; set; }
+    [Parameter] public bool IsCandidate { get; set; }
+    [Parameter] public string Path { get; set; } = "";
+    [Parameter] public EventCallback Moved { get; set; }
+    private TransferForm form = new();
+    private List<Municipality> towns = [];
+    private List<Position> positions = [];
+    protected override Task OnInitializedAsync() => Run(async () => towns = await Api.Get<List<Municipality>>("/api/municipalities"));
+    private Task LoadPositions() => Run(async () =>
+    {
+        form.PositionId = null; positions = [];
+        if (IsCandidate && towns.Find(m => m.Id == form.MunicipalityId) is { } m)
+            positions = await Api.Get<List<Position>>($"/api/{m.Slug}/positions");
+    });
+    private Task Move() => Run(async () =>
+    {
+        await Api.Write(HttpMethod.Post, Path + "/transfer", form);
+        await Moved.InvokeAsync();
+    });
+}

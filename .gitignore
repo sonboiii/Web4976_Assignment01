@@ -1,21 +1,5 @@
-## .NET build output
 bin/
 obj/
-
-## Visual Studio and VS Code
-.idea/
 .vs/
-.vscode/
-
-## User-specific files
+.idea/
 *.user
-*.suo
-
-## Local tooling and test results
-TestResults/
-*.log
-
-## Local application state
-App_Data/
-wwwroot/uploads/
-app.db-*

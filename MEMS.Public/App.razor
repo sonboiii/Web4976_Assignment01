@@ -1,0 +1,42 @@
+@inject IJSRuntime JS
+@inject HttpClient Http
+<header class="mast no-print"><div class="shell mast-inner">
+    <a href="/" class="brand"><span class="check" aria-hidden="true">✓</span>CivicVote</a>
+    <nav aria-label="Main navigation"><a href="/">Municipalities</a>
+        @if (viewer != null && viewer.Username == null) { <a href="/guide">Voting guide</a> }
+        @if (viewer != null) { <a href="@(viewer.Username == null ? "/admin/login" : "/admin")" target="_top">@(viewer.Username == null ? "Admin sign-in" : "Administration")</a> }
+        <button class="theme" @onclick="ToggleTheme">Switch theme</button>
+    </nav>
+</div></header>
+<main class="shell">
+    @if (unavailable)
+    { <p role="alert">The election service is unavailable. <button class="link-button" @onclick="LoadViewer">Try again</button></p> }
+    else if (viewer == null)
+    { <p role="status">Opening the election directory…</p> }
+    else
+    {
+    <CascadingValue Name="Administrator" Value="@(viewer.Username != null)">
+    <Router AppAssembly="typeof(App).Assembly">
+        <Found Context="route"><RouteView RouteData="route" /><FocusOnNavigate RouteData="route" Selector="h1" /></Found>
+        <NotFound><h1>Page unavailable</h1><a href="/">Browse municipalities</a></NotFound>
+    </Router>
+    </CascadingValue>
+    }
+</main>
+@code {
+    private sealed record Viewer(string? Username);
+    private Viewer? viewer;
+    private bool unavailable;
+    protected override Task OnInitializedAsync() => LoadViewer();
+    private async Task LoadViewer()
+    {
+        unavailable = false;
+        try
+        {
+            viewer = await Http.GetFromJsonAsync<Viewer>("/api/viewer");
+            await JS.InvokeVoidAsync("civic.watchSession", viewer?.Username);
+        }
+        catch (HttpRequestException) { unavailable = true; }
+    }
+    private async Task ToggleTheme() => await JS.InvokeVoidAsync("civic.theme");
+}

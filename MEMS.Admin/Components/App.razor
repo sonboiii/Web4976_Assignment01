@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <base href="/" />
+    <ImportMap />
+    <title>CivicVote administration</title>
+    <link rel="stylesheet" href="/admin-assets/bootstrap.min.css" />
+    <link rel="stylesheet" href="/admin-assets/site.css" />
+</head>
+<body>
+    <header class="mast"><div class="container d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <a class="brand" href="/admin">CivicVote <span>Administration</span></a>
+        <a href="/" target="_top" class="text-white">Public directory</a>
+        <AuthorizeView><Authorized>
+            <form method="post" action="/admin/logout"><AntiforgeryToken />
+                <span class="me-2">@context.User.Identity?.Name</span><button class="btn btn-sm btn-outline-light">Sign out</button>
+            </form>
+        </Authorized></AuthorizeView>
+    </div></header>
+    <main class="container py-4"><Routes @rendermode="InteractiveServer" /></main>
+    <div id="blazor-error-ui" style="display:none">Connection interrupted. <a href="/admin">Reload administration</a></div>
+    <script src="/admin-assets/session.js"></script>
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+</html>
